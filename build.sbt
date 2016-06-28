@@ -1,6 +1,6 @@
 scalaVersion := "2.11.8"
 
-name := "scorex-transaction"
+name := "scorex-consensus"
 organization := "org.scorexfoundation"
 version := "2.0.0-SNAPSHOT"
 
