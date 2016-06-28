@@ -26,7 +26,6 @@ case class NxtLikeConsensusBlockData(
 case class NxtBlock[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]](
                                                                                                         override val version: Byte,
                                                                                                         override val timestamp: Long,
-                                                                                                        blockId: Array[Byte],
                                                                                                         parentId: Array[Byte],
                                                                                                         baseTarget: Long,
                                                                                                         generationSignature: Array[Byte],
@@ -34,8 +33,5 @@ case class NxtBlock[TX <: Transaction[PublicKey25519Proposition, TX], TData <: T
                                                                                                         signature: Array[Byte],
                                                                                                         override val transactionalData: TData)
   extends Block[PublicKey25519Proposition, NxtLikeConsensusBlockData, TData](version, timestamp,
-    NxtLikeConsensusBlockData(blockId, parentId, baseTarget, generationSignature,
+    NxtLikeConsensusBlockData(signature, parentId, baseTarget, generationSignature,
       producer, signature: Array[Byte]), transactionalData)
-
-
-

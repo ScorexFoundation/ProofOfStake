@@ -25,7 +25,6 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
 
   import NxtLikeConsensusModule._
 
-//  implicit val consensusModule: ConsensusModule[NxtLikeConsensusBlockData, B] = this
 
   val version = 1: Byte
 
@@ -59,15 +58,17 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
   }.getOrElse(false)
 
 
-  override def generateNextBlock(account: PrivateKey25519Holder)
-                                    (implicit transactionModule: TransactionModule[PublicKey25519Proposition, _, TData]): Future[Option[NxtBlock[TX,TData]]] = {
+  override def generateNextBlock(transactionModule: TransactionModule[PublicKey25519Proposition, _, TData]): Future[Option[NxtBlock[TX,TData]]] = {
 
+    val account: PrivateKey25519Holder = ??? // todo: fix
+
+    val pubkey = account.publicCommitment
     val lastBlockKernelData = lastBlock.consensusData
 
     val lastBlockTime = lastBlock.timestamp
 
     val h = calcHit(lastBlockKernelData, account.publicCommitment)
-    val t = calcTarget(lastBlockKernelData, lastBlockTime, account.publicCommitment)
+    val t = calcTarget(lastBlockKernelData, lastBlockTime, account.publicCommitment)(transactionModule)
 
     val eta = (NTP.correctedTime() - lastBlockTime) / 1000
 
@@ -79,21 +80,19 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
     if (h < t) {
       val timestamp = NTP.correctedTime()
       val btg = calcBaseTarget(lastBlockKernelData, lastBlockTime, timestamp)
-      val gs = calcGeneratorSignature(lastBlockKernelData, account.publicCommitment)
-      val consensusData = new NxtLikeConsensusBlockData {
-        override val generationSignature: Array[Byte] = gs
-        override val baseTarget: Long = btg
-      }
+      val gs = calcGeneratorSignature(lastBlockKernelData, pubkey)
 
-      val unconfirmed = transactionModule.packUnconfirmed()
-      log.debug(s"Build block with ${unconfirmed.mbTransactions.map(_.size)} transactions")
+      val tdata = transactionModule.packUnconfirmed()
+      log.debug(s"Build block with ${tdata.mbTransactions.map(_.size)} transactions")
 
-      Future(Some(Block.buildAndSign(version,
-        timestamp,
-        id(lastBlock),
-        consensusData,
-        unconfirmed,
-        account)))
+      val generationSignature: Array[Byte] = gs
+      val baseTarget: Long = btg
+
+      val toSign = NxtBlock[TX, TData](version, timestamp, id(lastBlock), btg, gs, pubkey, Array(), tdata)
+
+      val signature = account.sign(toSign.bytes).proofBytes
+
+      Future(Some(NxtBlock(version, timestamp, id(lastBlock), btg, gs, pubkey, signature, tdata)))
 
     } else Future(None)
   }

@@ -19,7 +19,7 @@ class NxtConsensusApiRoute(override val application: Application)(implicit val c
   extends ApiRoute with CommonApiFunctions {
 
   //todo: asInstanceOf
-  private val consensusModule = application.consensusModule.asInstanceOf[NxtLikeConsensusModule[_]]
+  private val consensusModule = application.consensusModule.asInstanceOf[NxtLikeConsensusModule[_, _]]
 
   override val route: Route =
     pathPrefix("consensus") {
@@ -35,7 +35,7 @@ class NxtConsensusApiRoute(override val application: Application)(implicit val c
     path("generationsignature" / Segment) { case encodedSignature =>
       getJsonRoute {
         withBlock(consensusModule, encodedSignature) { block =>
-          val gs = consensusModule.consensusBlockData(block).generationSignature
+          val gs = block.generationSignature
           ("generationSignature" -> Base58.encode(gs)).asJson
         }
       }
@@ -48,7 +48,7 @@ class NxtConsensusApiRoute(override val application: Application)(implicit val c
     path("generationsignature") {
       getJsonRoute {
         val lastBlock = consensusModule.lastBlock
-        val gs = consensusModule.consensusBlockData(lastBlock).generationSignature
+        val gs = lastBlock.generationSignature
         ("generationSignature" -> Base58.encode(gs)).asJson
       }
     }
@@ -63,7 +63,7 @@ class NxtConsensusApiRoute(override val application: Application)(implicit val c
     path("basetarget" / Segment) { case encodedSignature =>
       getJsonRoute {
         withBlock(consensusModule, encodedSignature) { block =>
-          ("baseTarget" -> consensusModule.consensusBlockData(block).baseTarget).asJson
+          ("baseTarget" -> block.baseTarget).asJson
         }
       }
     }
@@ -75,7 +75,7 @@ class NxtConsensusApiRoute(override val application: Application)(implicit val c
     path("basetarget") {
       getJsonRoute {
         val lastBlock = consensusModule.lastBlock
-        val bt = consensusModule.consensusBlockData(lastBlock).baseTarget
+        val bt = lastBlock.baseTarget
         ("baseTarget" -> bt).asJson
       }
     }
