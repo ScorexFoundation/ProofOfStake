@@ -8,12 +8,13 @@ import scorex.transaction.box.PublicKey25519Proposition
 import shapeless.HNil
 
 case class NxtLikeConsensusBlockData(
-                                       blockId: Array[Byte],
                                        parentId: Array[Byte],
                                        baseTarget: Long,
                                        generationSignature: Array[Byte],
                                        producer: PublicKey25519Proposition,
                                        signature: Array[Byte]) extends LagonakiConsensusBlockData {
+
+  override val blockId: Array[Byte] = signature
 
   override val consensusFields = blockId :: parentId :: baseTarget :: generationSignature :: producer :: signature :: HNil
 
@@ -33,5 +34,5 @@ case class NxtBlock[TX <: Transaction[PublicKey25519Proposition, TX], TData <: T
                                                                                                         signature: Array[Byte],
                                                                                                         override val transactionalData: TData)
   extends Block[PublicKey25519Proposition, NxtLikeConsensusBlockData, TData](version, timestamp,
-    NxtLikeConsensusBlockData(signature, parentId, baseTarget, generationSignature,
-      producer, signature: Array[Byte]), transactionalData)
+    NxtLikeConsensusBlockData(parentId, baseTarget, generationSignature, producer, signature: Array[Byte]),
+    transactionalData)

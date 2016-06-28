@@ -7,14 +7,13 @@ import scorex.transaction.Transaction
 import scorex.transaction.box.PublicKey25519Proposition
 import shapeless.HNil
 
-case class QoraLikeConsensusBlockData(
-                                       blockId: Array[Byte],
-                                       parentId: Array[Byte],
+case class QoraLikeConsensusBlockData( parentId: Array[Byte],
                                        generatingBalance: Long,
                                        generatorSignature: Array[Byte],
                                        producer: PublicKey25519Proposition,
                                        signature: Array[Byte]) extends LagonakiConsensusBlockData {
 
+  override val blockId: Array[Byte] = signature
   override val consensusFields = blockId :: parentId :: generatingBalance :: generatorSignature :: producer :: signature :: HNil
 
   //todo: fix
@@ -26,7 +25,6 @@ case class QoraLikeConsensusBlockData(
 case class QoraBlock[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]](
                                                                                                    override val version: Byte,
                                                                                                    override val timestamp: Long,
-                                                                                                   blockId: Array[Byte],
                                                                                                    parentId: Array[Byte],
                                                                                                    generatingBalance: Long,
                                                                                                    generatorSignature: Array[Byte],
@@ -34,5 +32,5 @@ case class QoraBlock[TX <: Transaction[PublicKey25519Proposition, TX], TData <: 
                                                                                                    signature: Array[Byte],
                                                                                                    override val transactionalData: TData)
   extends Block[PublicKey25519Proposition, QoraLikeConsensusBlockData, TData](version, timestamp,
-    QoraLikeConsensusBlockData(blockId, parentId, generatingBalance, generatorSignature,
-      producer, signature: Array[Byte]), transactionalData)
+    QoraLikeConsensusBlockData(parentId, generatingBalance, generatorSignature, producer, signature: Array[Byte]),
+    transactionalData)

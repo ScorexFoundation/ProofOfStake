@@ -4,7 +4,7 @@ import com.google.common.primitives.{Bytes, Longs}
 import scorex.transaction.account.BalanceSheet
 import scorex.block.{Block, TransactionalData}
 import scorex.consensus.blockchain.StoredBlockchain
-import scorex.consensus.nxt.NxtLikeConsensusBlockData
+import scorex.consensus.nxt.{NxtBlock, NxtLikeConsensusBlockData}
 import scorex.consensus.{BlockChain, ConsensusModule, History, LagonakiConsensusModule}
 import scorex.crypto.hash.FastCryptographicHash._
 import scorex.transaction._
@@ -22,7 +22,7 @@ import scala.util.Try
 
 class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]]
   extends LagonakiConsensusModule[QoraLikeConsensusBlockData, QoraBlock[TX, TData]]
-    with StoredBlockchain[PublicKey25519Proposition, TX, QoraLikeConsensusBlockData, QoraBlock[TX, TData]] {
+    with StoredBlockchain[PublicKey25519Proposition, QoraLikeConsensusBlockData, TX, TData, QoraBlock[TX, TData]] {
 
   import QoraLikeConsensusModule.GeneratorSignatureLength
 
@@ -125,16 +125,18 @@ class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
 
     if (timestamp <= NTP.correctedTime()) {
 
-      val consensusData = new QoraLikeConsensusBlockData {
-        override val generatorSignature: Array[Byte] = signature
-        override val generatingBalance: Long = getNextBlockGeneratingBalance(lastBlock)
-      }
-      Future(Some(Block.buildAndSign(version,
-        timestamp,
-        id(lastBlock),
-        consensusData,
-        transactionModule.packUnconfirmed(),
-        account)))
+      val pubkey = account.publicCommitment
+      val generatorSignature: Array[Byte] = signature
+      val generatingBalance: Long = getNextBlockGeneratingBalance(lastBlock)
+      val tdata = transactionModule.packUnconfirmed()
+
+      val toSign = QoraBlock[TX, TData](version, timestamp, id(lastBlock), generatingBalance, generatorSignature, pubkey, Array(), tdata)
+
+      val sig = account.sign(toSign.bytes).proofBytes
+
+      val b = QoraBlock[TX, TData](version, timestamp, id(lastBlock), generatingBalance, generatorSignature, pubkey, sig, tdata)
+
+      Future(Some(b))
     } else Future(None)
   }
 
@@ -174,8 +176,7 @@ class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
 
   override def genesisData: QoraLikeConsensusBlockData =
     QoraLikeConsensusBlockData(
-      blockId = Array.fill(32)(0:Byte),
-      parentId = Array.fill(32)(0:Byte),
+      parentId = Array.fill(64)(0:Byte),
       generatingBalance = 10000000L,
       generatorSignature = Array.fill(64)(0: Byte),
       producer = PublicKey25519Proposition(Sized.wrap(Array.fill(32)(0:Byte))),

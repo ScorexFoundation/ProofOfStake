@@ -11,6 +11,7 @@ import scorex.transaction._
 import scorex.transaction.box.PublicKey25519Proposition
 import scorex.transaction.state.PrivateKey25519Holder
 import scorex.utils.{NTP, ScorexLogging}
+import shapeless.Sized
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -20,7 +21,7 @@ import scala.util.{Failure, Try}
 
 class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]](AvgDelay: Long = 5.seconds.toMillis)
   extends LagonakiConsensusModule[NxtLikeConsensusBlockData, NxtBlock[TX,TData]]
-    with StoredBlockchain[PublicKey25519Proposition, TX, NxtLikeConsensusBlockData, NxtBlock[TX, TData]]
+    with StoredBlockchain[PublicKey25519Proposition, NxtLikeConsensusBlockData, TX, TData, NxtBlock[TX, TData]]
     with ScorexLogging {
 
   import NxtLikeConsensusModule._
@@ -85,9 +86,6 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
       val tdata = transactionModule.packUnconfirmed()
       log.debug(s"Build block with ${tdata.mbTransactions.map(_.size)} transactions")
 
-      val generationSignature: Array[Byte] = gs
-      val baseTarget: Long = btg
-
       val toSign = NxtBlock[TX, TData](version, timestamp, id(lastBlock), btg, gs, pubkey, Array(), tdata)
 
       val signature = account.sign(toSign.bytes).proofBytes
@@ -123,11 +121,11 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
   private def bounded(value: BigInt, min: BigInt, max: BigInt): BigInt =
     if (value < min) min else if (value > max) max else value
 
-  override def parseBytes(bytes: Array[Byte]): Try[NxtLikeConsensusBlockData] = Try {
-    new NxtLikeConsensusBlockData {
+  def parseBytes(bytes: Array[Byte]): Try[Unit] = Try {
+    /*new NxtLikeConsensusBlockData {
       override val baseTarget: Long = Longs.fromByteArray(bytes.take(BaseTargetLength))
       override val generationSignature: Array[Byte] = bytes.takeRight(GeneratorSignatureLength)
-    }
+    }*/
   }
 
   override def blockScore(block: NxtBlock[TX,TData])(implicit transactionModule: TransactionModule[PublicKey25519Proposition, _, _]): BigInt = {
@@ -135,10 +133,13 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
   }.ensuring(_ > 0)
 
   override def genesisData: NxtLikeConsensusBlockData =
-    new NxtLikeConsensusBlockData {
-      override val baseTarget: Long = 153722867
-      override val generationSignature: Array[Byte] = Array.fill(32)(0: Byte)
-    }
+    NxtLikeConsensusBlockData (
+      parentId = Array.fill(64)(0:Byte),
+      baseTarget = 153722867L,
+      generationSignature = Array.fill(32)(0: Byte),
+      producer = PublicKey25519Proposition(Sized.wrap(Array.fill(32)(0:Byte))),
+      signature = Array.fill(64)(0: Byte)
+  )
 }
 
 

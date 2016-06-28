@@ -14,15 +14,15 @@ import scala.util.{Failure, Success, Try}
 /**
   * If no datafolder provided, blockchain lives in RAM (useful for tests)
   */
-trait StoredBlockchain[P <: Proposition, TX <: Transaction[P, TX], CData <: ConsensusData,
-B <: Block[P, CData, _ <: TransactionalData[TX]]]
+trait StoredBlockchain[P <: Proposition, CData <: ConsensusData, TX <: Transaction[P, TX], TData <: TransactionalData[_], B <: Block[P, CData, TData]]
   extends BlockChain[P, CData, B] with ScorexLogging {
   this: ConsensusModule[P, CData, B] =>
 
   val dataFolderOpt: Option[String]
-  val transactionModule: TransactionModule[P, _, _]
 
-  private val self = this
+  val transactionModule: TransactionModule[P, TX, TData]
+
+  private val self: ConsensusModule[P, CData, B] = this
 
   //compiler hangs if uncomment: private implicit val consensusModule: ConsensusModule[P, CData, B] = this
 
@@ -45,7 +45,10 @@ B <: Block[P, CData, _ <: TransactionalData[TX]]]
       Try(Option(blocks.get(height)))
         .toOption
         .flatten
-        .flatMap(b => Block.parse(b)(self, transactionModule).toOption)
+        .flatMap { b =>
+          val t: Try[B] = Block.parse(b)(self, transactionModule)
+          t.toOption
+        }
 
     def deleteBlock(height: Int): Unit = {
       blocks.remove(height)
@@ -60,7 +63,6 @@ B <: Block[P, CData, _ <: TransactionalData[TX]]]
     def heightOf(id: BlockId): Option[Int] = signatures.find(_._2.sameElements(id)).map(_._1)
 
     def score(): BigInt = if (height() > 0) scoreMap.get(height()) else 0
-
   }
 
   private val blockStorage: BlockchainPersistence = {
