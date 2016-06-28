@@ -29,15 +29,15 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
 
   val version = 1: Byte
 
-  override def isValid(block: NxtBlock[TX, TData])(implicit transactionModule: TransactionModule[_, _, _]): Boolean = {
+  override def isValid(block: NxtBlock[TX, TData])(implicit transactionModule: TransactionModule[_, _, _]): Boolean = Try {
 
     val blockTime = block.timestamp
 
     val prev = parent(block).get
     val prevTime = prev.timestamp
 
-    val prevBlockData = consensusBlockData(prev)
-    val blockData = consensusBlockData(block)
+    val prevBlockData = prev.consensusData
+    val blockData = block.consensusData
     val generator = block.consensusData.producer
 
     //check baseTarget
@@ -62,7 +62,7 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
   override def generateNextBlock(account: PrivateKey25519Holder)
                                     (implicit transactionModule: TransactionModule[PublicKey25519Proposition, _, TData]): Future[Option[NxtBlock[TX,TData]]] = {
 
-    val lastBlockKernelData = consensusBlockData(lastBlock)
+    val lastBlockKernelData = lastBlock.consensusData
 
     val lastBlockTime = lastBlock.timestamp
 

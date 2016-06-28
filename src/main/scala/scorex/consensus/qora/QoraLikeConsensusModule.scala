@@ -12,6 +12,7 @@ import scorex.transaction.box.PublicKey25519Proposition
 import scorex.transaction.state.PrivateKey25519Holder
 import scorex.transaction.state.PrivateKey25519Holder.PrivateKey25519
 import scorex.utils.NTP
+import shapeless.Sized
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -173,9 +174,12 @@ class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
 
   override def genesisData: QoraLikeConsensusBlockData =
     QoraLikeConsensusBlockData(
-
-      generatingBalance = 10000000L
-        generatorSignature = Array.fill(64)(0: Byte)
+      blockId = Array.fill(32)(0:Byte),
+      parentId = Array.fill(32)(0:Byte),
+      generatingBalance = 10000000L,
+      generatorSignature = Array.fill(64)(0: Byte),
+      producer = PublicKey25519Proposition(Sized.wrap(Array.fill(32)(0:Byte))),
+      signature = Array.fill(64)(0: Byte)
     )
 
   override def blockScore(block: QoraBlock[TX, TData])(implicit transactionModule: TransactionModule[PublicKey25519Proposition, _, _]): BigInt = BigInt(1)

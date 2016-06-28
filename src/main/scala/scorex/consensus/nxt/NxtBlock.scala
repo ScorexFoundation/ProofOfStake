@@ -36,3 +36,6 @@ case class NxtBlock[TX <: Transaction[PublicKey25519Proposition, TX], TData <: T
   extends Block[PublicKey25519Proposition, NxtLikeConsensusBlockData, TData](version, timestamp,
     NxtLikeConsensusBlockData(blockId, parentId, baseTarget, generationSignature,
       producer, signature: Array[Byte]), transactionalData)
+
+
+
