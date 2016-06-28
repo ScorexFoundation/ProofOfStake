@@ -21,5 +21,3 @@ Dockerfile
 
 *.data
 
-# non-submodules code
-src/main
