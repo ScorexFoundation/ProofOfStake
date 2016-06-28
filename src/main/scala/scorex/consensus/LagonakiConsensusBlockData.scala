@@ -2,7 +2,6 @@ package scorex.consensus
 
 import scorex.block.{Block, ConsensusData, TransactionalData}
 import scorex.crypto.signatures.Curve25519
-import scorex.transaction.LagonakiTransaction
 import scorex.transaction.box.PublicKey25519Proposition
 
 trait LagonakiConsensusBlockData extends ConsensusData {

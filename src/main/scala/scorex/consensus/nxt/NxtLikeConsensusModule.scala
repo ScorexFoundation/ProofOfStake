@@ -3,6 +3,8 @@ package scorex.consensus.nxt
 import com.google.common.primitives.Longs
 import scorex.transaction.account.BalanceSheet
 import scorex.block.{Block, TransactionalData}
+import scorex.consensus.blockchain.StoredBlockchain
+import scorex.consensus.qora.{QoraBlock, QoraLikeConsensusBlockData}
 import scorex.consensus.{ConsensusModule, LagonakiConsensusModule}
 import scorex.crypto.hash.FastCryptographicHash._
 import scorex.transaction._
@@ -16,8 +18,10 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Try}
 
 
-class NxtLikeConsensusModule[B <: Block[PublicKey25519Proposition, NxtLikeConsensusBlockData, _]](AvgDelay: Long = 5.seconds.toMillis)
-  extends LagonakiConsensusModule[NxtLikeConsensusBlockData, B] with ScorexLogging {
+class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]](AvgDelay: Long = 5.seconds.toMillis)
+  extends LagonakiConsensusModule[NxtLikeConsensusBlockData, NxtBlock[TX,TData]]
+    with StoredBlockchain[PublicKey25519Proposition, TX, NxtLikeConsensusBlockData, NxtBlock[TX, TData]]
+    with ScorexLogging {
 
   import NxtLikeConsensusModule._
 
@@ -25,7 +29,7 @@ class NxtLikeConsensusModule[B <: Block[PublicKey25519Proposition, NxtLikeConsen
 
   val version = 1: Byte
 
-  override def isValid[TT](block: B)(implicit transactionModule: TransactionModule[PublicKey25519Proposition, _, _]): Boolean = Try {
+  override def isValid(block: NxtBlock[TX, TData])(implicit transactionModule: TransactionModule[_, _, _]): Boolean = {
 
     val blockTime = block.timestamp
 
@@ -55,8 +59,8 @@ class NxtLikeConsensusModule[B <: Block[PublicKey25519Proposition, NxtLikeConsen
   }.getOrElse(false)
 
 
-  override def generateNextBlock[TT <: TransactionalData[_]](account: PrivateKey25519Holder)
-                                    (implicit transactionModule: TransactionModule[PublicKey25519Proposition, _, TT]): Future[Option[B]] = {
+  override def generateNextBlock(account: PrivateKey25519Holder)
+                                    (implicit transactionModule: TransactionModule[PublicKey25519Proposition, _, TData]): Future[Option[NxtBlock[TX,TData]]] = {
 
     val lastBlockKernelData = consensusBlockData(lastBlock)
 
@@ -127,9 +131,8 @@ class NxtLikeConsensusModule[B <: Block[PublicKey25519Proposition, NxtLikeConsen
     }
   }
 
-  override def blockScore(block: B)(implicit transactionModule: TransactionModule[_, _, _]): BigInt = {
-    val baseTarget = consensusBlockData(block).baseTarget
-    BigInt("18446744073709551616") / baseTarget
+  override def blockScore(block: NxtBlock[TX,TData])(implicit transactionModule: TransactionModule[PublicKey25519Proposition, _, _]): BigInt = {
+    BigInt("18446744073709551616") / block.baseTarget
   }.ensuring(_ > 0)
 
   override def genesisData: NxtLikeConsensusBlockData =

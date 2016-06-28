@@ -21,7 +21,7 @@ import scala.util.Try
 
 class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]]
   extends LagonakiConsensusModule[QoraLikeConsensusBlockData, QoraBlock[TX, TData]]
-    with StoredBlockchain[PublicKey25519Proposition, TX, QoraLikeConsensusBlockData, QoraBlock[TX, TData]]{
+    with StoredBlockchain[PublicKey25519Proposition, TX, QoraLikeConsensusBlockData, QoraBlock[TX, TData]] {
 
   import QoraLikeConsensusModule.GeneratorSignatureLength
 
@@ -94,7 +94,7 @@ class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
   }
 
   override def generateNextBlock(account: PrivateKey25519Holder)
-                                    (implicit transactionModule: TransactionModule[PublicKey25519Proposition, TX, TData]): Future[Option[QoraBlock[TX, TData]]] = {
+                                (implicit transactionModule: TransactionModule[PublicKey25519Proposition, TX, TData]): Future[Option[QoraBlock[TX, TData]]] = {
     val version = 1: Byte
 
     require(transactionModule.isInstanceOf[BalanceSheet[PublicKey25519Proposition]])
@@ -175,8 +175,8 @@ class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
     QoraLikeConsensusBlockData(
 
       generatingBalance = 10000000L
-      generatorSignature = Array.fill(64)(0: Byte)
-  )
+        generatorSignature = Array.fill(64)(0: Byte)
+    )
 
   override def blockScore(block: QoraBlock[TX, TData])(implicit transactionModule: TransactionModule[PublicKey25519Proposition, _, _]): BigInt = BigInt(1)
 }
