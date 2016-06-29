@@ -19,7 +19,7 @@ import scala.util.{Failure, Try}
 
 
 class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]](AvgDelay: Long = 5.seconds.toMillis)
-  extends LagonakiConsensusModule[NxtLikeConsensusBlockData, NxtBlock[TX,TData]]
+  extends LagonakiConsensusModule[NxtLikeConsensusBlockData, NxtBlock[TX, TData]]
     with StoredBlockchain[PublicKey25519Proposition, NxtLikeConsensusBlockData, TX, TData, NxtBlock[TX, TData]]
     with ScorexLogging {
 
@@ -58,7 +58,7 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
   }.getOrElse(false)
 
 
-  override def generateNextBlock(transactionModule: TransactionModule[PublicKey25519Proposition, _, TData]): Future[Option[NxtBlock[TX,TData]]] = {
+  override def generateNextBlock(transactionModule: TransactionModule[PublicKey25519Proposition, _, TData]): Future[Option[NxtBlock[TX, TData]]] = {
 
     val account: PrivateKey25519Holder = ??? // todo: fix
 
@@ -110,8 +110,8 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
   }
 
   protected def calcTarget(lastBlockData: NxtLikeConsensusBlockData,
-                         lastBlockTimestamp: Long,
-                         generator: PublicKey25519Proposition)(implicit transactionModule: TransactionModule[_, _, _]): BigInt = {
+                           lastBlockTimestamp: Long,
+                           generator: PublicKey25519Proposition)(implicit transactionModule: TransactionModule[_, _, _]): BigInt = {
     val eta = (NTP.correctedTime() - lastBlockTimestamp) / 1000 //in seconds
     val effBalance = transactionModule.asInstanceOf[BalanceSheet[PublicKey25519Proposition]].generationBalance(generator)
     BigInt(lastBlockData.baseTarget) * eta * effBalance
@@ -127,18 +127,18 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
     }*/
   }
 
-  override def blockScore(block: NxtBlock[TX,TData])(implicit transactionModule: TransactionModule[PublicKey25519Proposition, _, _]): BigInt = {
+  override def blockScore(block: NxtBlock[TX, TData])(implicit transactionModule: TransactionModule[PublicKey25519Proposition, _, _]): BigInt = {
     BigInt("18446744073709551616") / block.baseTarget
   }.ensuring(_ > 0)
 
   override def genesisData: NxtLikeConsensusBlockData =
-    NxtLikeConsensusBlockData (
-      parentId = Array.fill(64)(0:Byte),
+    NxtLikeConsensusBlockData(
+      parentId = Array.fill(64)(0: Byte),
       baseTarget = 153722867L,
       generationSignature = Array.fill(32)(0: Byte),
-      producer = PublicKey25519Proposition(Sized.wrap(Array.fill(32)(0:Byte))),
+      producer = PublicKey25519Proposition(Sized.wrap(Array.fill(32)(0: Byte))),
       signature = Array.fill(64)(0: Byte)
-  )
+    )
 }
 
 

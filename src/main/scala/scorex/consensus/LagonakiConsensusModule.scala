@@ -17,6 +17,7 @@ trait LagonakiConsensusModule[CData <: LagonakiConsensusBlockData, B <: Lagonaki
 
   /**
     * In Lagonaki, for both consensus modules, there's only one block generator
+    *
     * @param block - block to extract fees distribution from
     * @return
     */
