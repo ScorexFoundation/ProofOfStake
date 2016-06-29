@@ -2,15 +2,13 @@ package scorex.consensus.qora
 
 import com.google.common.primitives.{Bytes, Longs}
 import scorex.transaction.account.BalanceSheet
-import scorex.block.{Block, TransactionalData}
+import scorex.block.TransactionalData
 import scorex.consensus.blockchain.StoredBlockchain
-import scorex.consensus.nxt.{NxtBlock, NxtLikeConsensusBlockData}
-import scorex.consensus.{BlockChain, ConsensusModule, History, LagonakiConsensusModule}
+import scorex.consensus.LagonakiConsensusModule
 import scorex.crypto.hash.FastCryptographicHash._
 import scorex.transaction._
-import scorex.transaction.box.PublicKey25519Proposition
+import scorex.transaction.box.proposition.PublicKey25519Proposition
 import scorex.transaction.state.PrivateKey25519Holder
-import scorex.transaction.state.PrivateKey25519Holder.PrivateKey25519
 import scorex.utils.NTP
 import shapeless.Sized
 

@@ -12,7 +12,7 @@ import scorex.app.Application
 import scorex.block.{Block, ConsensusData}
 import scorex.consensus.BlockChain
 import scorex.crypto.encode.Base58
-import scorex.transaction.box.PublicKey25519Proposition
+import scorex.transaction.box.proposition.PublicKey25519Proposition
 
 @Path("/blocks")
 @Api(value = "/blocks", description = "Info about blockchain & individual blocks within it")

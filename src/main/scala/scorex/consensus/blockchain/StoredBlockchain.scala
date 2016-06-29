@@ -3,7 +3,7 @@ package scorex.consensus.blockchain
 import org.h2.mvstore.{MVMap, MVStore}
 import scorex.block.{Block, ConsensusData, TransactionalData}
 import scorex.consensus.{BlockChain, ConsensusModule}
-import scorex.transaction.box.Proposition
+import scorex.transaction.box.proposition.Proposition
 import scorex.transaction.{Transaction, TransactionModule}
 import scorex.utils.ScorexLogging
 

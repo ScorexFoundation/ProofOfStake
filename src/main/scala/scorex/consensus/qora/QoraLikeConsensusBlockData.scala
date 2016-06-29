@@ -4,7 +4,7 @@ import com.google.common.primitives.{Bytes, Longs}
 import scorex.block.{Block, TransactionalData}
 import scorex.consensus.LagonakiConsensusBlockData
 import scorex.transaction.Transaction
-import scorex.transaction.box.PublicKey25519Proposition
+import scorex.transaction.box.proposition.PublicKey25519Proposition
 import shapeless.HNil
 
 case class QoraLikeConsensusBlockData( parentId: Array[Byte],
