@@ -1,6 +1,6 @@
 package scorex.consensus
 
-import scorex.block.{Block, ConsensusData, TransactionalData}
+import scorex.block.ConsensusData
 import scorex.crypto.signatures.Curve25519
 import scorex.transaction.box.proposition.PublicKey25519Proposition
 
@@ -20,12 +20,3 @@ trait LagonakiConsensusBlockData extends ConsensusData {
 
   assert(parentId.length == BlockIdLength)
 }
-
-
-class LagonakiBlock[CData <: LagonakiConsensusBlockData, TData <: TransactionalData[_]]
-(
-  override val version: Byte,
-  override val timestamp: Long,
-  override val consensusData: CData,
-  override val transactionalData: TData)
-  extends Block[PublicKey25519Proposition, CData, TData](version, timestamp, consensusData, transactionalData)

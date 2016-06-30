@@ -6,20 +6,19 @@ import akka.actor.ActorRefFactory
 import akka.http.scaladsl.server.Route
 import io.swagger.annotations._
 import scorex.api.http.{ApiRoute, CommonApiFunctions}
-import scorex.app.Application
 import scorex.consensus.nxt.NxtLikeConsensusModule
 import scorex.crypto.encode.Base58
-
 import io.circe.generic.auto._
 import io.circe.syntax._
+import scorex.block.TransactionalData
+import scorex.settings.Settings
+import scorex.transaction.Transaction
+import scorex.transaction.box.proposition.PublicKey25519Proposition
 
 @Path("/consensus")
 @Api(value = "/consensus", description = "Consensus-related calls")
-class NxtConsensusApiRoute(override val application: Application)(implicit val context: ActorRefFactory)
+class NxtConsensusApiRoute[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]](consensusModule: NxtLikeConsensusModule[TX, TData], override val settings:Settings)(implicit val context: ActorRefFactory)
   extends ApiRoute with CommonApiFunctions {
-
-  //todo: asInstanceOf
-  private val consensusModule = application.consensusModule.asInstanceOf[NxtLikeConsensusModule[_, _]]
 
   override val route: Route =
     pathPrefix("consensus") {
@@ -35,7 +34,7 @@ class NxtConsensusApiRoute(override val application: Application)(implicit val c
     path("generationsignature" / Segment) { case encodedSignature =>
       getJsonRoute {
         withBlock(consensusModule, encodedSignature) { block =>
-          val gs = block.generationSignature
+          val gs = block.consensusData.generationSignature
           ("generationSignature" -> Base58.encode(gs)).asJson
         }
       }
@@ -48,7 +47,7 @@ class NxtConsensusApiRoute(override val application: Application)(implicit val c
     path("generationsignature") {
       getJsonRoute {
         val lastBlock = consensusModule.lastBlock
-        val gs = lastBlock.generationSignature
+        val gs = lastBlock.consensusData.generationSignature
         ("generationSignature" -> Base58.encode(gs)).asJson
       }
     }
@@ -63,7 +62,7 @@ class NxtConsensusApiRoute(override val application: Application)(implicit val c
     path("basetarget" / Segment) { case encodedSignature =>
       getJsonRoute {
         withBlock(consensusModule, encodedSignature) { block =>
-          ("baseTarget" -> block.baseTarget).asJson
+          ("baseTarget" -> block.consensusData.baseTarget).asJson
         }
       }
     }
@@ -75,7 +74,7 @@ class NxtConsensusApiRoute(override val application: Application)(implicit val c
     path("basetarget") {
       getJsonRoute {
         val lastBlock = consensusModule.lastBlock
-        val bt = lastBlock.baseTarget
+        val bt = lastBlock.consensusData.baseTarget
         ("baseTarget" -> bt).asJson
       }
     }

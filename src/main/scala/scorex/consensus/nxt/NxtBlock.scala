@@ -5,7 +5,6 @@ import scorex.block.{Block, TransactionalData}
 import scorex.consensus.LagonakiConsensusBlockData
 import scorex.transaction.Transaction
 import scorex.transaction.box.proposition.PublicKey25519Proposition
-import shapeless.HNil
 
 case class NxtLikeConsensusBlockData(
                                        parentId: Array[Byte],
@@ -16,23 +15,36 @@ case class NxtLikeConsensusBlockData(
 
   override val blockId: Array[Byte] = signature
 
-  override val consensusFields = blockId :: parentId :: baseTarget :: generationSignature :: producer :: signature :: HNil
-
   //todo: fix
   def bytes: Array[Byte] =
     Bytes.ensureCapacity(Longs.toByteArray(baseTarget), 8, 0) ++ generationSignature
 }
 
 
-case class NxtBlock[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]](
-                                                                                                        override val version: Byte,
-                                                                                                        override val timestamp: Long,
-                                                                                                        parentId: Array[Byte],
-                                                                                                        baseTarget: Long,
-                                                                                                        generationSignature: Array[Byte],
-                                                                                                        producer: PublicKey25519Proposition,
-                                                                                                        signature: Array[Byte],
-                                                                                                        override val transactionalData: TData)
-  extends Block[PublicKey25519Proposition, NxtLikeConsensusBlockData, TData](version, timestamp,
-    NxtLikeConsensusBlockData(parentId, baseTarget, generationSignature, producer, signature: Array[Byte]),
-    transactionalData)
+
+object NxtBlockBuilder {
+  def buildUnsigned[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]](
+                                                                                                       version: Byte,
+                                                                                                       timestamp: Long,
+                                                                                                       parentId: Array[Byte],
+                                                                                                       baseTarget: Long,
+                                                                                                       generationSignature: Array[Byte],
+                                                                                                       producer: PublicKey25519Proposition,
+                                                                                                       transactionalData: TData):Block[PublicKey25519Proposition, NxtLikeConsensusBlockData, TData] = {
+    val cdata = NxtLikeConsensusBlockData(parentId, baseTarget, generationSignature, producer, Array())
+    new Block(version, timestamp, cdata, transactionalData)
+  }
+
+  def build[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]](
+                                                                                               version: Byte,
+                                                                                               timestamp: Long,
+                                                                                               parentId: Array[Byte],
+                                                                                               baseTarget: Long,
+                                                                                               generationSignature: Array[Byte],
+                                                                                               producer: PublicKey25519Proposition,
+                                                                                               signature: Array[Byte],
+                                                                                               transactionalData: TData):Block[PublicKey25519Proposition, NxtLikeConsensusBlockData, TData]  = {
+    val cdata = NxtLikeConsensusBlockData(parentId, baseTarget, generationSignature, producer, signature)
+    new Block(version, timestamp, cdata, transactionalData)
+  }
+}

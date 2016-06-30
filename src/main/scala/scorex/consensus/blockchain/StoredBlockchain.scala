@@ -14,15 +14,15 @@ import scala.util.{Failure, Success, Try}
 /**
   * If no datafolder provided, blockchain lives in RAM (useful for tests)
   */
-trait StoredBlockchain[P <: Proposition, CData <: ConsensusData, TX <: Transaction[P, TX], TData <: TransactionalData[_], B <: Block[P, CData, TData]]
-  extends BlockChain[P, CData, B] with ScorexLogging {
-  this: ConsensusModule[P, CData, B] =>
+trait StoredBlockchain[P <: Proposition, CData <: ConsensusData, TX <: Transaction[P, TX], TData <: TransactionalData[TX]]
+  extends BlockChain[P, TX, TData, CData] with ScorexLogging {
+  this: ConsensusModule[P, TX, TData, CData] =>
 
   val dataFolderOpt: Option[String]
 
-  val transactionModule: TransactionModule[P, TX, TData]
+  val transactionalModule: TransactionModule[P, TX, TData]
 
-  private val self: ConsensusModule[P, CData, B] = this
+  private val self: ConsensusModule[P, TX, TData, CData] = this
 
   //compiler hangs if uncomment: private implicit val consensusModule: ConsensusModule[P, CData, B] = this
 
@@ -34,19 +34,19 @@ trait StoredBlockchain[P <: Proposition, CData <: ConsensusData, TX <: Transacti
     //if there are some uncommited changes from last run, discard'em
     if (signatures.size() > 0) database.rollback()
 
-    def writeBlock(height: Int, block: B): Try[Unit] = Try {
+    def writeBlock(height: Int, block: Block[P, CData, TData]): Try[Unit] = Try {
       blocks.put(height, block.bytes)
-      scoreMap.put(height, score() + blockScore(block)(transactionModule))
+      scoreMap.put(height, score() + blockScore(block))
       signatures.put(height, id(block))
       database.commit()
     }
 
-    def readBlock(height: Int): Option[B] =
+    def readBlock(height: Int): Option[Block[P, CData, TData]] =
       Try(Option(blocks.get(height)))
         .toOption
         .flatten
         .flatMap { b =>
-          val t: Try[B] = Block.parse(b)(self, transactionModule)
+          val t: Try[Block[P, CData, TData]] = Block.parse[P, TX, CData, TData](b)(self, transactionalModule)
           t.toOption
         }
 
@@ -76,7 +76,7 @@ trait StoredBlockchain[P <: Proposition, CData <: ConsensusData, TX <: Transacti
 
   log.info(s"Initialized blockchain in $dataFolderOpt with ${height()} blocks")
 
-  override def appendBlock(block: B): Try[Unit] = synchronized {
+  override def appendBlock(block: Block[P, CData, TData]): Try[Unit] = synchronized {
     Try {
       val parent = parentId(block)
       if ((height() == 0) || (id(lastBlock) sameElements parent)) {
@@ -97,7 +97,7 @@ trait StoredBlockchain[P <: Proposition, CData <: ConsensusData, TX <: Transacti
     Try(blockStorage.deleteBlock(h))
   }
 
-  override def blockAt(height: Int): Option[B] = synchronized {
+  override def blockAt(height: Int): Option[Block[P, CData, TData]] = synchronized {
     blockStorage.readBlock(height)
   }
 
@@ -112,15 +112,15 @@ trait StoredBlockchain[P <: Proposition, CData <: ConsensusData, TX <: Transacti
 
   override def heightOf(blockSignature: BlockId): Option[Int] = blockStorage.heightOf(blockSignature)
 
-  override def blockById(blockId: BlockId): Option[B] = heightOf(blockId).flatMap(blockAt)
+  override def blockById(blockId: BlockId): Option[Block[P, CData, TData]] = heightOf(blockId).flatMap(blockAt)
 
-  override def children(blockId: BlockId): Seq[B] =
+  override def children(blockId: BlockId): Seq[Block[P, CData, TData]] =
     heightOf(blockId).flatMap(h => blockAt(h + 1)).toSeq
 
-  override def generatedBy(prop: P): Seq[B] =
+  override def generatedBy(prop: P): Seq[Block[P, CData, TData]] =
     (1 to height()).flatMap { h =>
       blockAt(h).flatMap { block =>
         if (this.producers(block).contains(prop)) Some(block) else None
-      }: Option[B]
+      }: Option[Block[P, CData, TData]]
     }
 }

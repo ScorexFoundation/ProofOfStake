@@ -1,11 +1,11 @@
 package scorex.consensus.nxt
 
-import com.google.common.primitives.Longs
 import scorex.transaction.account.BalanceSheet
-import scorex.block.TransactionalData
+import scorex.block.{Block, TransactionalData}
 import scorex.consensus.blockchain.StoredBlockchain
-import scorex.consensus.LagonakiConsensusModule
+import scorex.consensus.{ConsensusSettings, LagonakiConsensusModule}
 import scorex.crypto.hash.FastCryptographicHash._
+import scorex.settings.Settings
 import scorex.transaction._
 import scorex.transaction.box.proposition.PublicKey25519Proposition
 import scorex.transaction.state.PrivateKey25519Holder
@@ -18,17 +18,21 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Try}
 
 
-class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]](AvgDelay: Long = 5.seconds.toMillis)
-  extends LagonakiConsensusModule[NxtLikeConsensusBlockData, NxtBlock[TX, TData]]
-    with StoredBlockchain[PublicKey25519Proposition, NxtLikeConsensusBlockData, TX, TData, NxtBlock[TX, TData]]
+class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]]
+(override val settings: Settings with ConsensusSettings, override val transactionalModule: TransactionModule[PublicKey25519Proposition, TX, TData])(AvgDelay: Long = 5.seconds.toMillis)
+  extends LagonakiConsensusModule[TX, TData, NxtLikeConsensusBlockData]
+    with StoredBlockchain[PublicKey25519Proposition, NxtLikeConsensusBlockData, TX, TData]
     with ScorexLogging {
 
   import NxtLikeConsensusModule._
 
+  override val dataFolderOpt = settings.dataDirOpt
+
+  type NxtBlock = Block[PublicKey25519Proposition, NxtLikeConsensusBlockData, TData]
 
   val version = 1: Byte
 
-  override def isValid(block: NxtBlock[TX, TData])(implicit transactionModule: TransactionModule[_, _, _]): Boolean = Try {
+  override def isValid(block: NxtBlock): Boolean = Try {
 
     val blockTime = block.timestamp
 
@@ -58,7 +62,7 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
   }.getOrElse(false)
 
 
-  override def generateNextBlock(transactionModule: TransactionModule[PublicKey25519Proposition, _, TData]): Future[Option[NxtBlock[TX, TData]]] = {
+  override def generateNextBlock(): Future[Option[NxtBlock]] = {
 
     val account: PrivateKey25519Holder = ??? // todo: fix
 
@@ -68,13 +72,13 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
     val lastBlockTime = lastBlock.timestamp
 
     val h = calcHit(lastBlockKernelData, account.publicCommitment)
-    val t = calcTarget(lastBlockKernelData, lastBlockTime, account.publicCommitment)(transactionModule)
+    val t = calcTarget(lastBlockKernelData, lastBlockTime, account.publicCommitment)
 
     val eta = (NTP.correctedTime() - lastBlockTime) / 1000
 
     log.debug(s"hit: $h, target: $t, generating ${h < t}, eta $eta, " +
       s"account:  $account " +
-      s"account balance: ${transactionModule.asInstanceOf[BalanceSheet[PublicKey25519Proposition]].generationBalance(account.publicCommitment)}"
+      s"account balance: ${transactionalModule.asInstanceOf[BalanceSheet[PublicKey25519Proposition]].generationBalance(account.publicCommitment)}"
     )
 
     if (h < t) {
@@ -82,15 +86,14 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
       val btg = calcBaseTarget(lastBlockKernelData, lastBlockTime, timestamp)
       val gs = calcGeneratorSignature(lastBlockKernelData, pubkey)
 
-      val tdata = transactionModule.packUnconfirmed()
+      val tdata = transactionalModule.packUnconfirmed()
       log.debug(s"Build block with ${tdata.mbTransactions.map(_.size)} transactions")
 
-      val toSign = NxtBlock[TX, TData](version, timestamp, id(lastBlock), btg, gs, pubkey, Array(), tdata)
+      val toSign = NxtBlockBuilder.buildUnsigned[TX, TData](version, timestamp, id(lastBlock), btg, gs, pubkey, tdata)
 
       val signature = account.sign(toSign.bytes).proofBytes
 
-      Future(Some(NxtBlock(version, timestamp, id(lastBlock), btg, gs, pubkey, signature, tdata)))
-
+      Future(Some(NxtBlockBuilder.build[TX, TData](version, timestamp, id(lastBlock), btg, gs, pubkey, signature, tdata)))
     } else Future(None)
   }
 
@@ -111,9 +114,9 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
 
   protected def calcTarget(lastBlockData: NxtLikeConsensusBlockData,
                            lastBlockTimestamp: Long,
-                           generator: PublicKey25519Proposition)(implicit transactionModule: TransactionModule[_, _, _]): BigInt = {
+                           generator: PublicKey25519Proposition): BigInt = {
     val eta = (NTP.correctedTime() - lastBlockTimestamp) / 1000 //in seconds
-    val effBalance = transactionModule.asInstanceOf[BalanceSheet[PublicKey25519Proposition]].generationBalance(generator)
+    val effBalance = transactionalModule.asInstanceOf[BalanceSheet[PublicKey25519Proposition]].generationBalance(generator)
     BigInt(lastBlockData.baseTarget) * eta * effBalance
   }
 
@@ -127,11 +130,11 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
     }*/
   }
 
-  override def blockScore(block: NxtBlock[TX, TData])(implicit transactionModule: TransactionModule[PublicKey25519Proposition, _, _]): BigInt = {
-    BigInt("18446744073709551616") / block.baseTarget
+  override def blockScore(block: NxtBlock): BigInt = {
+    BigInt("18446744073709551616") / block.consensusData.baseTarget
   }.ensuring(_ > 0)
 
-  override def genesisData: NxtLikeConsensusBlockData =
+  override lazy val genesisData: NxtLikeConsensusBlockData =
     NxtLikeConsensusBlockData(
       parentId = Array.fill(64)(0: Byte),
       baseTarget = 153722867L,

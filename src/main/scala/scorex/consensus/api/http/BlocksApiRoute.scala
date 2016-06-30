@@ -9,21 +9,19 @@ import io.circe.syntax._
 import io.swagger.annotations._
 import scorex.api.http.{ApiError, ApiRoute}
 import scorex.app.Application
-import scorex.block.{Block, ConsensusData}
+import scorex.block.{Block, ConsensusData, TransactionalData}
 import scorex.consensus.BlockChain
 import scorex.crypto.encode.Base58
+import scorex.settings.Settings
+import scorex.transaction.Transaction
 import scorex.transaction.box.proposition.PublicKey25519Proposition
 
 @Path("/blocks")
 @Api(value = "/blocks", description = "Info about blockchain & individual blocks within it")
-case class BlocksApiRoute[CData <: ConsensusData, B <: Block[PublicKey25519Proposition, CData, _]](consensusModule: BlockChain[PublicKey25519Proposition, CData, B], application: Application)(implicit val context: ActorRefFactory)
+case class BlocksApiRoute[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX], CData <: ConsensusData](blockchain: BlockChain[PublicKey25519Proposition, TX, TData, CData], override val settings: Settings)(implicit val context: ActorRefFactory)
   extends ApiRoute {
 
   private type P = PublicKey25519Proposition
-  private type BT = application.BType
-  private type CData = application.CData
-
-  //private val consensusModule = application.consensusModule.asInstanceOf[BlockChain[PublicKey25519Proposition, CData, BT]] //todo: aIO
 
   override lazy val route =
     pathPrefix("blocks") {
@@ -39,7 +37,7 @@ case class BlocksApiRoute[CData <: ConsensusData, B <: Block[PublicKey25519Propo
     path("address" / Segment) { case address =>
       getJsonRoute {
         PublicKey25519Proposition.validPubKey(address).map { pk =>
-          consensusModule.generatedBy(pk).map(_.json).asJson //todo: asIO
+          blockchain.generatedBy(pk).map(_.json).asJson //todo: asIO
         }.getOrElse(ApiError.invalidAddress)
       }
     }
@@ -53,7 +51,7 @@ case class BlocksApiRoute[CData <: ConsensusData, B <: Block[PublicKey25519Propo
   def child: Route = {
     path("child" / Segment) { case encodedId =>
       getJsonRoute {
-        consensusModule
+        blockchain
           .children(Base58.decode(encodedId).get) //todo: get
           .headOption
           .map(_.json)
@@ -71,8 +69,8 @@ case class BlocksApiRoute[CData <: ConsensusData, B <: Block[PublicKey25519Propo
   def delay: Route = {
     path("delay" / Segment / IntNumber) { case (encodedId: String, count) =>
       getJsonRoute {
-        withBlock(consensusModule, encodedId: String) { block =>
-          consensusModule.averageDelay(block, count).map(d => ("delay" -> d).asJson)
+        withBlock(blockchain, encodedId: String) { block =>
+          blockchain.averageDelay(block, count).map(d => ("delay" -> d).asJson)
             .getOrElse(Map("status" -> "error", "details" -> "Internal error").asJson)
         }
       }
@@ -87,8 +85,8 @@ case class BlocksApiRoute[CData <: ConsensusData, B <: Block[PublicKey25519Propo
   def heightEncoded: Route = {
     path("height" / Segment) { case encodedId =>
       getJsonRoute {
-        withBlock(consensusModule, encodedId) { block =>
-          ("height" -> consensusModule.heightOf(block)).asJson
+        withBlock(blockchain, encodedId) { block =>
+          ("height" -> blockchain.heightOf(block)).asJson
         }
       }
     }
@@ -99,7 +97,7 @@ case class BlocksApiRoute[CData <: ConsensusData, B <: Block[PublicKey25519Propo
   def height: Route = {
     path("height") {
       getJsonRoute {
-        ("height" -> consensusModule.height()).asJson
+        ("height" -> blockchain.height()).asJson
       }
     }
   }
@@ -112,7 +110,7 @@ case class BlocksApiRoute[CData <: ConsensusData, B <: Block[PublicKey25519Propo
   def at: Route = {
     path("at" / IntNumber) { case height =>
       getJsonRoute {
-        consensusModule
+        blockchain
           .blockAt(height)
           .map(_.json)
           .getOrElse(Map("status" -> "error", "details" -> "No block for this height").asJson)
@@ -130,7 +128,7 @@ case class BlocksApiRoute[CData <: ConsensusData, B <: Block[PublicKey25519Propo
     path("seq" / IntNumber / IntNumber) { case (start, end) =>
       getJsonRoute {
         (start to end).map { height =>
-          consensusModule
+          blockchain
             .blockAt(height)
             .map(_.json)
             .getOrElse(("error" -> s"No block at height $height").asJson)
@@ -145,7 +143,7 @@ case class BlocksApiRoute[CData <: ConsensusData, B <: Block[PublicKey25519Propo
   def last: Route = {
     path("last") {
       getJsonRoute {
-        consensusModule.lastBlock.json
+        blockchain.lastBlock.json
       }
     }
   }
@@ -155,7 +153,7 @@ case class BlocksApiRoute[CData <: ConsensusData, B <: Block[PublicKey25519Propo
   def first: Route = {
     path("first") {
       getJsonRoute {
-        consensusModule.genesisBlock.json
+        blockchain.genesisBlock.json
       }
     }
   }
@@ -168,7 +166,7 @@ case class BlocksApiRoute[CData <: ConsensusData, B <: Block[PublicKey25519Propo
   def signature: Route = {
     path("signature" / Segment) { case encodedId =>
       getJsonRoute {
-        withBlock(consensusModule, encodedId)(_.json)
+        withBlock(blockchain, encodedId)(_.json)
       }
     }
   }

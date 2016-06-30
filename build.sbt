@@ -7,7 +7,7 @@ version := "2.0.0-SNAPSHOT"
 resolvers += "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/"
 
 libraryDependencies ++= Seq(
-  "org.scorexfoundation" %% "scorex-basics" % "2.0.0-M1"
+  "org.scorexfoundation" %% "scorex-basics" % "2.0.0-M2"
 )
 
 scalacOptions ++= Seq("-feature", "-deprecation")
