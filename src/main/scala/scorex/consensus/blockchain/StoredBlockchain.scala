@@ -34,19 +34,19 @@ trait StoredBlockchain[P <: Proposition, CData <: ConsensusData, TX <: Transacti
     //if there are some uncommited changes from last run, discard'em
     if (signatures.size() > 0) database.rollback()
 
-    def writeBlock(height: Int, block: Block[P, CData, TData]): Try[Unit] = Try {
+    def writeBlock(height: Int, block: Block[P, TData, CData]): Try[Unit] = Try {
       blocks.put(height, block.bytes)
       scoreMap.put(height, score() + blockScore(block))
       signatures.put(height, id(block))
       database.commit()
     }
 
-    def readBlock(height: Int): Option[Block[P, CData, TData]] =
+    def readBlock(height: Int): Option[Block[P, TData, CData]] =
       Try(Option(blocks.get(height)))
         .toOption
         .flatten
         .flatMap { b =>
-          val t: Try[Block[P, CData, TData]] = Block.parse[P, TX, CData, TData](b)(self, transactionalModule)
+          val t: Try[Block[P, TData, CData]] = Block.parse[P, TX, TData, CData](b)(self, transactionalModule)
           t.toOption
         }
 
@@ -76,7 +76,7 @@ trait StoredBlockchain[P <: Proposition, CData <: ConsensusData, TX <: Transacti
 
   log.info(s"Initialized blockchain in $dataFolderOpt with ${height()} blocks")
 
-  override def appendBlock(block: Block[P, CData, TData]): Try[Unit] = synchronized {
+  override def appendBlock(block: Block[P, TData, CData]): Try[Unit] = synchronized {
     Try {
       val parent = parentId(block)
       if ((height() == 0) || (id(lastBlock) sameElements parent)) {
@@ -97,7 +97,7 @@ trait StoredBlockchain[P <: Proposition, CData <: ConsensusData, TX <: Transacti
     Try(blockStorage.deleteBlock(h))
   }
 
-  override def blockAt(height: Int): Option[Block[P, CData, TData]] = synchronized {
+  override def blockAt(height: Int): Option[Block[P, TData, CData]] = synchronized {
     blockStorage.readBlock(height)
   }
 
@@ -112,15 +112,15 @@ trait StoredBlockchain[P <: Proposition, CData <: ConsensusData, TX <: Transacti
 
   override def heightOf(blockSignature: BlockId): Option[Int] = blockStorage.heightOf(blockSignature)
 
-  override def blockById(blockId: BlockId): Option[Block[P, CData, TData]] = heightOf(blockId).flatMap(blockAt)
+  override def blockById(blockId: BlockId): Option[Block[P, TData, CData]] = heightOf(blockId).flatMap(blockAt)
 
-  override def children(blockId: BlockId): Seq[Block[P, CData, TData]] =
+  override def children(blockId: BlockId): Seq[Block[P, TData, CData]] =
     heightOf(blockId).flatMap(h => blockAt(h + 1)).toSeq
 
-  override def generatedBy(prop: P): Seq[Block[P, CData, TData]] =
+  override def generatedBy(prop: P): Seq[Block[P, TData, CData]] =
     (1 to height()).flatMap { h =>
       blockAt(h).flatMap { block =>
         if (this.producers(block).contains(prop)) Some(block) else None
-      }: Option[Block[P, CData, TData]]
+      }: Option[Block[P, TData, CData]]
     }
 }

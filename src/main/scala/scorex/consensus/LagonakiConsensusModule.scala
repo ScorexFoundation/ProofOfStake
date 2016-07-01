@@ -14,15 +14,15 @@ trait LagonakiConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
 
   type ConsensusBlockData <: LagonakiConsensusBlockData
 
-  type LagonakiBlock = Block[PublicKey25519Proposition, CData, TData]
+  type LagonakiBlock = Block[PublicKey25519Proposition, TData, CData]
 
   override val BlockIdLength: Int = 64
 
   val settings: Settings with ConsensusSettings
 
-  def id(block: Block[PublicKey25519Proposition, CData, TData]): BlockId = block.consensusData.blockId
+  def id(block: Block[PublicKey25519Proposition, TData, CData]): BlockId = block.consensusData.blockId
 
-  def parentId(block: Block[PublicKey25519Proposition, CData, TData]): BlockId = block.consensusData.parentId
+  def parentId(block: Block[PublicKey25519Proposition, TData, CData]): BlockId = block.consensusData.parentId
 
   /**
     * In Lagonaki, for both consensus modules, there's only one block generator

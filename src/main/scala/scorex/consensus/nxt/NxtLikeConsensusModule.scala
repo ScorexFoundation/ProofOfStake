@@ -28,7 +28,7 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
 
   override val dataFolderOpt = settings.dataDirOpt
 
-  type NxtBlock = Block[PublicKey25519Proposition, NxtLikeConsensusBlockData, TData]
+  type NxtBlock = Block[PublicKey25519Proposition, TData, NxtLikeConsensusBlockData]
 
   val version = 1: Byte
 

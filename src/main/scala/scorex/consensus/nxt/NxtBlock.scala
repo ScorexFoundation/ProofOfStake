@@ -16,8 +16,8 @@ case class NxtLikeConsensusBlockData(
   override val blockId: Array[Byte] = signature
 
   //todo: fix
-  def bytes: Array[Byte] =
-    Bytes.ensureCapacity(Longs.toByteArray(baseTarget), 8, 0) ++ generationSignature
+  //def bytes: Array[Byte] =
+  //    Bytes.ensureCapacity(Longs.toByteArray(baseTarget), 8, 0) ++ generationSignature
 }
 
 
@@ -30,7 +30,7 @@ object NxtBlockBuilder {
                                                                                                        baseTarget: Long,
                                                                                                        generationSignature: Array[Byte],
                                                                                                        producer: PublicKey25519Proposition,
-                                                                                                       transactionalData: TData):Block[PublicKey25519Proposition, NxtLikeConsensusBlockData, TData] = {
+                                                                                                       transactionalData: TData):Block[PublicKey25519Proposition, TData, NxtLikeConsensusBlockData] = {
     val cdata = NxtLikeConsensusBlockData(parentId, baseTarget, generationSignature, producer, Array())
     new Block(version, timestamp, cdata, transactionalData)
   }
@@ -43,7 +43,7 @@ object NxtBlockBuilder {
                                                                                                generationSignature: Array[Byte],
                                                                                                producer: PublicKey25519Proposition,
                                                                                                signature: Array[Byte],
-                                                                                               transactionalData: TData):Block[PublicKey25519Proposition, NxtLikeConsensusBlockData, TData]  = {
+                                                                                               transactionalData: TData):Block[PublicKey25519Proposition, TData, NxtLikeConsensusBlockData]  = {
     val cdata = NxtLikeConsensusBlockData(parentId, baseTarget, generationSignature, producer, signature)
     new Block(version, timestamp, cdata, transactionalData)
   }

@@ -20,7 +20,7 @@ import scala.util.Try
 
 
 class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]]
-(override val settings: Settings with ConsensusSettings, override val transactionalModule: TransactionModule[PublicKey25519Proposition, TX, TData])
+(override val settings: Settings with ConsensusSettings, override val transactionalModule: TransactionModule[PublicKey25519Proposition, TX, TData] with BalanceSheet[PublicKey25519Proposition])
   extends LagonakiConsensusModule[TX, TData, QoraLikeConsensusBlockData]
     with StoredBlockchain[PublicKey25519Proposition, QoraLikeConsensusBlockData, TX, TData] {
 
@@ -37,7 +37,7 @@ class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
   private val MinBlockTime = 1.minute.toSeconds
   private val MaxBlockTime = 5.minute.toSeconds
 
-  type QoraBlock = Block[PublicKey25519Proposition, QoraLikeConsensusBlockData, TData]
+  type QoraBlock = Block[PublicKey25519Proposition, TData, QoraLikeConsensusBlockData]
 
   def calculateSignature(prevBlock: QoraBlock, account: PrivateKey25519Holder): Array[Byte] = {
     val gb = getNextBlockGeneratingBalance(prevBlock)
@@ -101,8 +101,6 @@ class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
     val version = 1: Byte
 
     val account: PrivateKey25519Holder = ??? //todo: fix
-
-    require(transactionalModule.isInstanceOf[BalanceSheet[PublicKey25519Proposition]])
 
     //todo: asInstanceOf
     val generationBalance = transactionalModule.asInstanceOf[BalanceSheet[PublicKey25519Proposition]].generationBalance(account.publicCommitment)

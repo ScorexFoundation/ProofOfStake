@@ -1,6 +1,5 @@
 package scorex.consensus.qora
 
-import com.google.common.primitives.{Bytes, Longs}
 import scorex.block.{Block, TransactionalData}
 import scorex.consensus.LagonakiConsensusBlockData
 import scorex.transaction.Transaction
@@ -15,8 +14,8 @@ case class QoraLikeConsensusBlockData(parentId: Array[Byte],
   override val blockId: Array[Byte] = signature
 
   //todo: fix
-  def bytes: Array[Byte] =
-    Bytes.ensureCapacity(Longs.toByteArray(generatingBalance), 8, 0) ++ generatorSignature
+  // def bytes: Array[Byte] =
+  //  Bytes.ensureCapacity(Longs.toByteArray(generatingBalance), 8, 0) ++ generatorSignature
 }
 
 
@@ -28,7 +27,7 @@ object QoraBlockBuilder {
                                                                                                        generatingBalance: Long,
                                                                                                        generatorSignature: Array[Byte],
                                                                                                        producer: PublicKey25519Proposition,
-                                                                                                       transactionalData: TData):Block[PublicKey25519Proposition, QoraLikeConsensusBlockData, TData] = {
+                                                                                                       transactionalData: TData):Block[PublicKey25519Proposition, TData, QoraLikeConsensusBlockData] = {
     val cdata = QoraLikeConsensusBlockData(parentId, generatingBalance, generatorSignature, producer, Array())
     new Block(version, timestamp, cdata, transactionalData)
   }
@@ -41,7 +40,7 @@ object QoraBlockBuilder {
                                                                                                generatorSignature: Array[Byte],
                                                                                                producer: PublicKey25519Proposition,
                                                                                                signature: Array[Byte],
-                                                                                               transactionalData: TData):Block[PublicKey25519Proposition, QoraLikeConsensusBlockData, TData]  = {
+                                                                                               transactionalData: TData):Block[PublicKey25519Proposition, TData, QoraLikeConsensusBlockData]  = {
     val cdata = QoraLikeConsensusBlockData(parentId, generatingBalance, generatorSignature, producer, signature)
     new Block(version, timestamp, cdata, transactionalData)
   }
