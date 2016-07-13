@@ -10,6 +10,7 @@ import scorex.settings.Settings
 import scorex.transaction._
 import scorex.transaction.box.proposition.PublicKey25519Proposition
 import scorex.transaction.state.PrivateKey25519Holder
+import scorex.transaction.wallet.Wallet
 import scorex.utils.NTP
 import shapeless.Sized
 
@@ -97,7 +98,7 @@ class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
     getNextBlockGeneratingBalance(lastBlock)
   }
 
-  override def generateNextBlock(): Future[Option[QoraBlock]] = {
+  override def generateNextBlock(wallet: Wallet[_ <: PublicKey25519Proposition, _ <: TransactionModule[PublicKey25519Proposition, TX, TData]]): Future[Option[QoraBlock]] = {
     val version = 1: Byte
 
     val account: PrivateKey25519Holder = ??? //todo: fix
