@@ -2,8 +2,7 @@ package scorex.consensus.nxt
 
 import scorex.transaction.account.BalanceSheet
 import scorex.block.{Block, TransactionalData}
-import scorex.consensus.blockchain.StoredBlockchain
-import scorex.consensus.{ConsensusSettings, LagonakiConsensusModule}
+import scorex.consensus.{StoredBlockchain, ConsensusSettings, LagonakiConsensusModule}
 import scorex.crypto.hash.FastCryptographicHash._
 import scorex.settings.Settings
 import scorex.transaction._
@@ -122,7 +121,7 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
   }
 
   private def bounded(value: BigInt, min: BigInt, max: BigInt): BigInt =
-    if (value < min) min else if (value > max) max else value
+    if (value < min) min else if (va\lue > max) max else value
 
   def parseBytes(bytes: Array[Byte]): Try[Unit] = Try {
     /*new NxtLikeConsensusBlockData {
