@@ -1,12 +1,12 @@
 package scorex.consensus.qora
 
 import com.google.common.primitives.{Bytes, Longs}
-import scorex.transaction.account.BalanceSheet
 import scorex.block.{Block, TransactionalData}
-import scorex.consensus.{StoredBlockchain, ConsensusSettings, LagonakiConsensusModule}
+import scorex.consensus.{ConsensusSettings, LagonakiConsensusModule, StoredBlockchain}
 import scorex.crypto.hash.FastCryptographicHash._
 import scorex.settings.Settings
 import scorex.transaction._
+import scorex.transaction.account.BalanceSheet
 import scorex.transaction.box.proposition.PublicKey25519Proposition
 import scorex.transaction.state.PrivateKey25519Holder
 import scorex.transaction.wallet.Wallet
@@ -20,9 +20,11 @@ import scala.util.Try
 
 
 class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]]
-(override val settings: Settings with ConsensusSettings, override val transactionalModule: TransactionModule[PublicKey25519Proposition, TX, TData] with BalanceSheet[PublicKey25519Proposition])
+(override val settings: Settings with ConsensusSettings,
+ override val transactionalModule: TransactionalModule[PublicKey25519Proposition, TX, TData]
+   with BalanceSheet[PublicKey25519Proposition])
   extends LagonakiConsensusModule[TX, TData, QoraLikeConsensusBlockData]
-    with StoredBlockchain[PublicKey25519Proposition, QoraLikeConsensusBlockData, TX, TData] {
+  with StoredBlockchain[PublicKey25519Proposition, QoraLikeConsensusBlockData, TX, TData] {
 
   import QoraLikeConsensusModule.GeneratorSignatureLength
 
@@ -97,7 +99,7 @@ class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
     getNextBlockGeneratingBalance(lastBlock)
   }
 
-  override def generateNextBlock(wallet: Wallet[_ <: PublicKey25519Proposition, _ <: TransactionModule[PublicKey25519Proposition, TX, TData]]): Future[Option[QoraBlock]] = {
+  override def generateNextBlock(wallet: Wallet[_ <: PublicKey25519Proposition, _ <: TransactionalModule[PublicKey25519Proposition, TX, TData]]): Future[Option[QoraBlock]] = {
     val version = 1: Byte
 
     val account: PrivateKey25519Holder = ??? //todo: fix
@@ -142,11 +144,12 @@ class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
     } else Future(None)
   }
 
-  def parseBytes(bytes: Array[Byte]): Try[Unit] = Try {
+  def parseBytes(bytes: Array[Byte]): Try[QoraLikeConsensusBlockData] = Try {
     /*new QoraLikeConsensusBlockData {
       override val generatingBalance: Long = Longs.fromByteArray(bytes.take(GeneratingBalanceLength))
       override val generatorSignature: Array[Byte] = bytes.takeRight(GeneratorSignatureLength)
     }*/
+    ???
   }
 
 
@@ -178,10 +181,10 @@ class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
 
   override lazy val genesisData: QoraLikeConsensusBlockData =
     QoraLikeConsensusBlockData(
-      parentId = Array.fill(64)(0:Byte),
+      parentId = Array.fill(64)(0: Byte),
       generatingBalance = 10000000L,
       generatorSignature = Array.fill(64)(0: Byte),
-      producer = PublicKey25519Proposition(Sized.wrap(Array.fill(32)(0:Byte))),
+      producer = PublicKey25519Proposition(Sized.wrap(Array.fill(32)(0: Byte))),
       signature = Array.fill(64)(0: Byte)
     )
 

@@ -1,5 +1,6 @@
 package scorex.consensus.qora
 
+import io.circe.Json
 import scorex.block.{Block, TransactionalData}
 import scorex.consensus.LagonakiConsensusBlockData
 import scorex.transaction.Transaction
@@ -14,8 +15,9 @@ case class QoraLikeConsensusBlockData(parentId: Array[Byte],
   override val blockId: Array[Byte] = signature
 
   //todo: fix
-  // def bytes: Array[Byte] =
-  //  Bytes.ensureCapacity(Longs.toByteArray(generatingBalance), 8, 0) ++ generatorSignature
+  override def bytes: Array[Byte] = ???
+
+  override def json: Json = ???
 }
 
 

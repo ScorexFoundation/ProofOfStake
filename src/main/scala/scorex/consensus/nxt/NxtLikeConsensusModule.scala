@@ -19,10 +19,12 @@ import scala.util.{Failure, Try}
 
 
 class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], TData <: TransactionalData[TX]]
-(override val settings: Settings with ConsensusSettings, override val transactionalModule: TransactionModule[PublicKey25519Proposition, TX, TData])(AvgDelay: Long = 5.seconds.toMillis)
+(override val settings: Settings with ConsensusSettings,
+ override val transactionalModule: TransactionalModule[PublicKey25519Proposition, TX, TData])
+(AvgDelay: Long = 5.seconds.toMillis)
   extends LagonakiConsensusModule[TX, TData, NxtLikeConsensusBlockData]
-    with StoredBlockchain[PublicKey25519Proposition, NxtLikeConsensusBlockData, TX, TData]
-    with ScorexLogging {
+  with StoredBlockchain[PublicKey25519Proposition, NxtLikeConsensusBlockData, TX, TData]
+  with ScorexLogging {
 
   import NxtLikeConsensusModule._
 
@@ -51,8 +53,8 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
     //check generation signature
     val calcGs = calcGeneratorSignature(prevBlockData, generator)
     val blockGs = blockData.generationSignature
-    require(calcGs.unsized.sameElements(blockGs),
-      s"Block's generation signature is wrong, calculated: ${calcGs.unsized.mkString}, block contains: ${blockGs.mkString}")
+    require(calcGs.sameElements(blockGs),
+      s"Block's generation signature is wrong, calculated: ${calcGs.mkString}, block contains: ${blockGs.mkString}")
 
     //check hit < target
     calcHit(prevBlockData, generator) < calcTarget(prevBlockData, prevTime, generator)
@@ -62,7 +64,7 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
   }.getOrElse(false)
 
 
-  override def generateNextBlock(wallet: Wallet[_ <: PublicKey25519Proposition, _ <: TransactionModule[PublicKey25519Proposition, TX, TData]]): Future[Option[NxtBlock]] = {
+  override def generateNextBlock(wallet: Wallet[_ <: PublicKey25519Proposition, _ <: TransactionalModule[PublicKey25519Proposition, TX, TData]]): Future[Option[NxtBlock]] = {
 
     val account: PrivateKey25519Holder = ??? // todo: fix
 
@@ -101,7 +103,7 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
     hash(lastBlockData.generationSignature ++ generator.publicKey.unsized)
 
   private def calcHit(lastBlockData: NxtLikeConsensusBlockData, generator: PublicKey25519Proposition): BigInt =
-    BigInt(1, calcGeneratorSignature(lastBlockData, generator).unsized.take(8))
+    BigInt(1, calcGeneratorSignature(lastBlockData, generator).take(8))
 
   private def calcBaseTarget(lastBlockData: NxtLikeConsensusBlockData,
                              lastBlockTimestamp: Long,
@@ -123,11 +125,12 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
   private def bounded(value: BigInt, min: BigInt, max: BigInt): BigInt =
     if (value < min) min else if (value > max) max else value
 
-  def parseBytes(bytes: Array[Byte]): Try[Unit] = Try {
+  def parseBytes(bytes: Array[Byte]): Try[NxtLikeConsensusBlockData] = Try {
     /*new NxtLikeConsensusBlockData {
       override val baseTarget: Long = Longs.fromByteArray(bytes.take(BaseTargetLength))
       override val generationSignature: Array[Byte] = bytes.takeRight(GeneratorSignatureLength)
     }*/
+    ???
   }
 
   override def blockScore(block: NxtBlock): BigInt = {

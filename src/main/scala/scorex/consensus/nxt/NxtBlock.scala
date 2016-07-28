@@ -1,6 +1,7 @@
 package scorex.consensus.nxt
 
 import com.google.common.primitives.{Bytes, Longs}
+import io.circe.Json
 import scorex.block.{Block, TransactionalData}
 import scorex.consensus.LagonakiConsensusBlockData
 import scorex.transaction.Transaction
@@ -16,8 +17,9 @@ case class NxtLikeConsensusBlockData(
   override val blockId: Array[Byte] = signature
 
   //todo: fix
-  //def bytes: Array[Byte] =
-  //    Bytes.ensureCapacity(Longs.toByteArray(baseTarget), 8, 0) ++ generationSignature
+  override def bytes: Array[Byte] = ???
+
+  override def json: Json = ???
 }
 
 
