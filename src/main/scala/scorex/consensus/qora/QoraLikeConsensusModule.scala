@@ -102,7 +102,7 @@ class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
   override def generateNextBlock(wallet: Wallet[_ <: PublicKey25519Proposition, _ <: TransactionalModule[PublicKey25519Proposition, TX, TData]]): Future[Option[QoraBlock]] = {
     val version = 1: Byte
 
-    val account: PrivateKey25519Holder = ??? //todo: fix
+    val account: PrivateKey25519Holder = wallet.privateKeyAccount().asInstanceOf[PrivateKey25519Holder]
     val pubkey = account.publicCommitment
 
     //todo: asInstanceOf

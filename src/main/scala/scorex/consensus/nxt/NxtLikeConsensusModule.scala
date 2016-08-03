@@ -66,7 +66,7 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
 
   override def generateNextBlock(wallet: Wallet[_ <: PublicKey25519Proposition, _ <: TransactionalModule[PublicKey25519Proposition, TX, TData]]): Future[Option[NxtBlock]] = {
 
-    val account: PrivateKey25519Holder = ??? // todo: fix
+    val account: PrivateKey25519Holder = wallet.privateKeyAccount().asInstanceOf[PrivateKey25519Holder]
 
     val pubkey = account.publicCommitment
     val lastBlockKernelData = lastBlock.consensusData
