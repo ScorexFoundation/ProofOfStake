@@ -80,7 +80,7 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
 
     log.debug(s"hit: $h, target: $t, generating ${h < t}, eta $eta, " +
       s"account:  $account " +
-      s"account balance: ${transactionalModule.asInstanceOf[BalanceSheet[PublicKey25519Proposition]].generationBalance(account.publicCommitment)}"
+      s"account balance: ${effectiveBalance(account.publicCommitment)}"
     )
 
     if (h < t) {
@@ -118,9 +118,11 @@ class NxtLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], T
                            lastBlockTimestamp: Long,
                            generator: PublicKey25519Proposition): BigInt = {
     val eta = (NTP.correctedTime() - lastBlockTimestamp) / 1000 //in seconds
-    val effBalance = transactionalModule.asInstanceOf[BalanceSheet[PublicKey25519Proposition]].generationBalance(generator)
-    BigInt(lastBlockData.baseTarget) * eta * effBalance
+    BigInt(lastBlockData.baseTarget) * eta * effectiveBalance(generator)
   }
+
+  protected def effectiveBalance(generator: PublicKey25519Proposition) =
+    transactionalModule.asInstanceOf[BalanceSheet[PublicKey25519Proposition]].balance(generator)
 
   private def bounded(value: BigInt, min: BigInt, max: BigInt): BigInt =
     if (value < min) min else if (value > max) max else value

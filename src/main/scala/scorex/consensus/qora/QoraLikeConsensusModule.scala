@@ -103,9 +103,10 @@ class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
     val version = 1: Byte
 
     val account: PrivateKey25519Holder = ??? //todo: fix
+    val pubkey = account.publicCommitment
 
     //todo: asInstanceOf
-    val generationBalance = transactionalModule.asInstanceOf[BalanceSheet[PublicKey25519Proposition]].generationBalance(account.publicCommitment)
+    val generationBalance = transactionalModule.asInstanceOf[BalanceSheet[PublicKey25519Proposition]].balance(pubkey)
     require(generationBalance > 0, "Zero generating balance in generateNextBlock")
 
     val signature = calculateSignature(lastBlock, account)
@@ -129,7 +130,6 @@ class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
 
     if (timestamp <= NTP.correctedTime()) {
 
-      val pubkey = account.publicCommitment
       val generatorSignature: Array[Byte] = signature
       val generatingBalance: Long = getNextBlockGeneratingBalance(lastBlock)
       val tdata = transactionalModule.packUnconfirmed()
@@ -164,7 +164,7 @@ class QoraLikeConsensusModule[TX <: Transaction[PublicKey25519Proposition, TX], 
       val targetBytes = Array.fill(32)(Byte.MaxValue)
       val baseTarget: BigInt = getBaseTarget(data.generatingBalance)
       val gen = data.producer
-      val genBalance = BigInt(transactionalModule.asInstanceOf[BalanceSheet[PublicKey25519Proposition]].generationBalance(gen))
+      val genBalance = BigInt(transactionalModule.asInstanceOf[BalanceSheet[PublicKey25519Proposition]].balance(gen))
       val target0 = BigInt(1, targetBytes) / baseTarget * genBalance
 
       //target bounds
